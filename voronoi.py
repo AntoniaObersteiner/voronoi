@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import turtle
-import time
+from time import sleep, time
 from random import random
 from math import sin, cos, pi
 
@@ -294,6 +294,8 @@ def main():
         [(r1*cos(pi*i/180), r1*sin(pi*i/180)) for i in range(2, 360, 19)] +
         [(r2*cos(pi*i/180), r2*sin(pi*i/180)) for i in range(5, 360, 19)]
     )
+    grid = Grid(points + circles, 3)
+    stamp = time()
     while True:
         points = [
             (
@@ -304,7 +306,9 @@ def main():
         ]
         lines = get_voronoi_lines(points + circles)
 
-        redraw(points, lines)
+        redraw(grid.points[:len(points)], lines)
+        print(f"{time() - stamp = }")
+        stamp = time()
     input("[ENTER] to quit")
 
 def get_voronoi_lines(points):
