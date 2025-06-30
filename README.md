@@ -8,4 +8,3 @@ provides a simple python implementation.
 ## TODO
 
 - add an “infinite” line outward wherever a Relevant Center does not connect to three
-- use some locality strategy, like a tree or a grid
