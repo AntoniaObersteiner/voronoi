@@ -115,8 +115,7 @@ class Line:
 
     def where(self, I):
         # where is intersection relative to line anchors
-        R = self.relative(I)
-        r = R[0] / self.p
+        r = (I[0] - self.p) / self.p
         return r
 
     def shorten(self, other, I):
@@ -139,32 +138,27 @@ class Line:
         if I is not None:
             self.shorten(other, I)
 
-    def relative(self, K):
-        return (
-            K[0] - self.p,
-            K[1]
-        )
-
-def avg(P, Q):
-    return (
-        (P[0] + Q[0]) / 2,
-        (P[1] + Q[1]) / 2,
-    )
-def diff(P, Q):
-    return (
-        P[0] - Q[0],
-        P[1] - Q[1],
-    )
-
 def get_triple_point(P, Q, R):
     # M = (P+Q)/2
     # N = (P-Q)
     # K = (Q+R)/2
     # L = (Q-R)
-    M =  avg(P, Q)
-    N = diff(P, Q)
-    K =  avg(Q, R)
-    L = diff(Q, R)
+    M = (
+        (P[0] + Q[0]) / 2,
+        (P[1] + Q[1]) / 2,
+    )
+    N = (
+        P[0] - Q[0],
+        P[1] - Q[1],
+    )
+    K = (
+        (R[0] + Q[0]) / 2,
+        (R[1] + Q[1]) / 2,
+    )
+    L = (
+        R[0] - Q[0],
+        R[1] - Q[1],
+    )
     # (I-M)*N = 0
     # (I-K)*L = 0
     # I*N = M*N
@@ -214,74 +208,7 @@ def redraw(points, lines, touched = None):
 
     turtle.update()
 
-def old_main():
-    from sys import argv
-
-    points = [
-        ( 6,  2),
-        (-4,  0),
-        (-1,  4),
-        ( 3, -2),
-    ] if len(argv) > 1 else [
-        ((random()-.5)*20, (random() - .5)*20)
-        for _ in range(10)
-    ]
-    pairs = [
-        (i, j)
-        for i in range(len(points))
-        for j in range(i)
-    ]
-    pairs.sort(key = lambda ij: dist(points[ij[0]], points[ij[1]]))
-    print(pairs)
-
-    lines = [
-        Line(points[i], points[j])
-        for i, j in pairs
-    ]
-
-    # confine them inside this slightly wonky border
-    for line in lines:
-        line.intersect_and_shorten(Line((0.1, 0.1), ( 19,   0)))
-        line.intersect_and_shorten(Line((0.1, 0.1), (-19,   0)))
-        line.intersect_and_shorten(Line((0.1, 0.1), (  0,  19)))
-        line.intersect_and_shorten(Line((0.1, 0.1), (  0, -19)))
-
-    touched = set()
-
-    for k in range(len(lines)):
-        for l in range(k):
-            if len(set(pairs[k]) & set(pairs[l])) == 0:
-                continue
-            redraw(points, lines, touched)
-            print(f"{k} + {l}: {pairs[k]} + {pairs[l]}")
-
-            if len(argv) > 1:
-                input("[ENTER] to continue")
-
-            I = lines[k].intersect(lines[l])
-            if I is None:
-                continue
-            d = dist(I, lines[k].K)
-            for p, point in enumerate(points):
-                if p in pairs[k]: continue
-                if p in pairs[l]: continue
-                if dist(I, point) < d:
-                    print(f"closer: {p} [{point[0]:3.1f}, {point[1]:3.1f}]")
-                    break
-            else:
-                if lines[k].shorten(lines[l], I):
-                    touched |= {k, l}
-                    print(f"{touched = }")
-
-    redraw(points, lines, touched)
-    input("[ENTER] to quit")
-
-def main():
-    from sys import argv
-
-    number_of_points = int(argv[1]) if len(argv) > 1 else 10
-    grid_granularity = int(argv[2]) if len(argv) > 2 else 3
-
+def main(number_of_points, grid_granularity):
     r1 = 20
     r2 = 30
     speed = 1
@@ -304,10 +231,10 @@ def main():
             grid.update(p, point, points[p])
         lines = get_voronoi_lines(grid)
 
-        redraw(points, lines)
+        if use_turtle:
+            redraw(grid.points[:len(points)], lines)
         print(f"{time() - stamp = }")
         stamp = time()
-    input("[ENTER] to quit")
 
 class Grid:
     def round(self, point):
@@ -324,6 +251,9 @@ class Grid:
 
         self.data[old_ij].remove(p)
         self.data[new_ij].append(p)
+
+        if len(self.data[old_ij]) == 0:
+            del self.data[old_ij]
 
     def __init__(self, points, side = 3):
         self.side = side
@@ -377,23 +307,25 @@ def get_voronoi_lines(grid):
         for p1 in range(p2)
         for p0 in range(p1)
     ]
-    centers = {
-        (p0, p1, p2): center
-        for p0, p1, p2 in triples
-        if (center := get_triple_point(points[p0], points[p1], points[p2])) is not None
-    }
-    distances = {
-        π: dist(center, points[π[0]])
-        for π, center in centers.items()
-    }
-    relevants = [
-        π for π in centers.keys()
-        if all(
-            distances[π] <= dist(points[p], centers[π])
-            or p in π
-            for p in grid.around(centers[π], distances[π])
-        )
-    ]
+    centers = {}
+    distances = {}
+    relevants = []
+    for π in triples:
+        center = get_triple_point(points[π[0]], points[π[1]], points[π[2]])
+        if center is not None:
+            centers[π] = center
+            distances[π] = dist(center, points[π[0]])
+
+            is_relevant = True
+            for p in grid.around(centers[π], distances[π]):
+                if p in π:
+                    continue
+                if distances[π] > dist(points[p], centers[π]):
+                    is_relevant = False
+                    break
+            if is_relevant:
+                relevants.append(π)
+
     edges = [
         (π, ρ)
         for π in relevants
@@ -413,6 +345,19 @@ def get_voronoi_lines(grid):
     return lines
 
 if __name__ == "__main__":
-    turtle_init()
-    #old_main()
-    main()
+    try:
+        turtle_init()
+        use_turtle = True
+    except:
+        pass
+        use_turtle = False
+
+    from sys import argv
+
+    number_of_points = int(argv[1]) if len(argv) > 1 else 10
+    grid_granularity = int(argv[2]) if len(argv) > 2 else 3
+
+    for _ in range(10):
+        print("=================")
+        main(number_of_points, grid_granularity)
+
