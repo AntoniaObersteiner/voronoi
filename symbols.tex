@@ -1,20 +1,33 @@
 
-\newcommand\point[1][]{{{P}_{#1}}}
+\newcommand\point[1][\pointindex]{{{P}_{#1}}}
 \newcommand\points{\point[\pointindices]}
 \newcommand\pointindex[1][]{{{p}_{#1}}}
 \newcommand\pointindices{\Pi}
+\newcommand\ooint[1][\oointindex]{\point[#1]}
+\newcommand\oointindex[1][]{{{o}_{#1}}}
 
-\newcommand\cnter[1][]{Q_{#1}}
+\newcommand\cnter[1][\cnterindex]{Q_{#1}}
 \newcommand\cnters{\cnter[\cnterindices]}
 \newcommand\cnterindex[1][]{{q_{#1}}}
 \newcommand\cnterindices{\Omega}
 
+\newcommand\relevant[1][\relevantindex]{Q_{#1}}
 \newcommand\relevants{\relevant[\relevantindices]}
 \newcommand\relevantindex[1][]{{r_{#1}}}
 \newcommand\relevantindices{R}
+\newcommand\selevant[1][\selevantindex]{\relevant[#1]}
+\newcommand\selevantindex[1][]{{s_{#1}}}
 
-\newcommand\encode[1]{\omega\!\of{#1}}
-\newcommand\decode[1]{\pi\!\of{#1}}
+\newcommand\edge[1][\edgeindex]{E_{#1}}
+\newcommand\edges{\edge[\edgeindices]}
+\newcommand\edgeindex[1][]{{r_{#1}}}
+\newcommand\edgeindices{}
+\newcommand\edgepoint[1][\of{\relevantindex, \selevantindex}]{V_{#1}}
+
+\DeclareMathOperator{\Encode}{\omega}
+\DeclareMathOperator{\Decode}{\pi}
+\newcommand\encode[1]{\Encode\of{#1}}
+\newcommand\decode[1]{\Decode\of{#1}}
 \newcommand\triple[1]{#1[0], #1[1], #1[2]}
 \newcommand\texttriple[1]{$#1[0], #1[1]$ and $#1[2]$}
 

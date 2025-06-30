@@ -10,22 +10,54 @@
 \begin{document}
 
 \section{Exposition}
-\paragraph{The Points} $\points := \set{\point[\pointindex] \in\reals^2}$ have
-indices $\pointindex \in \pointindices := \oival{0, \abs{\pointindices}}\cap\nats$.
-The Points are pairwise distinct.
-\paragraph{The Centers} $\cnters := \set{\cnter[\cnterindex] \in\reals^2}$ have
-indices $\cnterindex \in \cnterindices := \oival{0, \abs{\cnterindices}}\cap\nats$.
-Each Center $\cnter[\cnterindex]$ is equally distant from three Points
+\paragraph{The Points} $\points := \set{\point \in\reals^2}$ have
+indices $\pointindex\in\pointindices := \oival{0, \abs{\pointindices}}\cap\nats$
+and are pairwise distinct.
+
+\paragraph{The Centers} $\cnters = \set{\cnter \in\reals^2}$ have
+indices $\cnterindex\in\cnterindices := \oival{0, \abs{\cnterindices}}\cap\nats$.
+Each Center $\cnter$ is equally distant from three Points
 	$\point[{\pointindex[0]}]$,
 	$\point[{\pointindex[1]}]$ and
 	$\point[{\pointindex[2]}]$,
-with Encoding $\encode{\cdot}$ and Decoding $\decode{\cdot}$ where
+with Encoding $\Encode$ and Decoding $\Decode$ where
 $\cnterindex = \encode{\triple{\pointindex}}$ such that
 $\decode{\encode{\triple{\pointindex}}} := \of{\triple{\pointindex}}$.
-Thus, $\abs{\cnterindices} = \abs{\pointindices}^3$.
+Thus, $\abs{\cnterindices} = \abs{\pointindices}^3$\!.
 Note that the order of \texttriple{\pointindex} does not matter,
 so a lot of the $\cnter$ will be identical.
-Non-distinct \texttriple{\pointindex} are not relevant to the problem and their
-$\cnter[\encode{\triple{\pointindex}}]$ are therefore undefined.
-Therefore, $\pointindex[0] > \pointindex[1] > \pointindex[2]$ will usually hold.
+Non-pairwise-distinct \texttriple{\pointindex} are not relevant to the problem and
+their $\cnter[\encode{\triple{\pointindex}}]$ are therefore undefined.
+Therefore, $\pointindex[0] > \pointindex[1] > \pointindex[2]$ is presumed.
+
+\paragraph{The Relevant Centers} $\relevants \subseteq \cnters$ are those
+$\cnter$ that have no $\point$ nearer to them than their three
+$\point[\decode{\cnterindex}]$.
+$$
+\relevants := \set{\cnter\in\cnters \mid \nexists
+\pointindex\in\pointindices\setminus\decode{q}. \abs{\point -
+\cnter} < \abs{\point[\decode{\cnterindex}] - \cnter}}
+$$
+
+\paragraph{The Voronoi Edges} $\edges\subseteq\relevants^2$ connect Relevant Centers
+that share two Points.
+$$
+\edges := \set{(r, s)\in\relevants^2 \mid
+\abs{\decode{\relevantindex} \cap \decode{\selevantindex}} = 2}
+$$
+where $\decode{\relevantindex}$ behave like a set
+$\set{\triple{\relevantindex}}$, not a tuple $\of{\triple{\relevantindex}}$,
+and $\decode{\selevantindex}$ ana\-lo\-gous\-ly.
+
+The points on the Edges $\edgepoint\of t :=
+t\cdot\relevant+(1-t)\cdot\selevant \mid t\in(0, 1)$ then satisfy the following
+condition regarding the Points of the indices $\set{\pointindex, \oointindex} :=
+\decode{\relevantindex} \cap \decode{\selevantindex}$:
+$$
+\abs{\edgepoint\of t - \point} =
+\abs{\edgepoint\of t - \ooint} <
+\min_{n\in\pointindices\setminus\set{\pointindex, \oointindex}}
+\abs{\edgepoint\of t - \point[n]}
+$$.
+
 \end{document}
