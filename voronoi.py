@@ -278,23 +278,19 @@ def old_main():
 def main():
     from sys import argv
 
+    number_of_points = int(argv[1]) if len(argv) > 1 else 10
+
     r1 = 20
     r2 = 30
     speed = 1
-    points = ([
-        ( 6,  2),
-        (-4,  0),
-        (-1,  4),
-        ( 3, -2),
-    ] if len(argv) > 1 else [
+    points = [
         ((random()-.5)*20, (random() - .5)*20)
-        for _ in range(20)
-    ])
+        for _ in range(number_of_points)
+    ]
     circles = (
         [(r1*cos(pi*i/180), r1*sin(pi*i/180)) for i in range(2, 360, 19)] +
         [(r2*cos(pi*i/180), r2*sin(pi*i/180)) for i in range(5, 360, 19)]
     )
-    grid = Grid(points + circles, 3)
     stamp = time()
     while True:
         points = [
@@ -306,7 +302,7 @@ def main():
         ]
         lines = get_voronoi_lines(points + circles)
 
-        redraw(grid.points[:len(points)], lines)
+        redraw(points, lines)
         print(f"{time() - stamp = }")
         stamp = time()
     input("[ENTER] to quit")
