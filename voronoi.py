@@ -294,15 +294,15 @@ def main():
         [(r2*cos(pi*i/180), r2*sin(pi*i/180)) for i in range(5, 360, 19)]
     )
     stamp = time()
+    grid = Grid(points + circles, grid_granularity)
     while True:
-        points = [
-            (
+        for p, point in enumerate(points):
+            grid.points[p] = (
                 point[0] + speed*(random()-.5),
                 point[1] + speed*(random()-.5)
             )
-            for point in points
-        ]
-        lines = get_voronoi_lines(points + circles, grid_granularity)
+            grid.update(p, point, points[p])
+        lines = get_voronoi_lines(grid)
 
         redraw(points, lines)
         print(f"{time() - stamp = }")
@@ -316,8 +316,14 @@ class Grid:
             int(point[1] / self.side),
         )
 
-    def at(self, point):
-        return self.data[self.round(point)]
+    def update(self, p, old_pos, new_pos):
+        old_ij = self.round(old_pos)
+        new_ij = self.round(new_pos)
+        if old_ij == new_ij:
+            return
+
+        self.data[old_ij].remove(p)
+        self.data[new_ij].append(p)
 
     def __init__(self, points, side = 3):
         self.side = side
@@ -326,7 +332,7 @@ class Grid:
         self.box = ((10000, 10000), (-10000, -10000))
         for p, point in enumerate(points):
             ij = self.round(point)
-            self.data[ij].append((p, point))
+            self.data[ij].append(p)
             self.box = (
                 (   min(self.box[0][0], ij[0]),
                     min(self.box[0][1], ij[1]),  ),
@@ -342,8 +348,8 @@ class Grid:
         I, J = self.round(center)
         D = ceil(distance / self.side) + 1
         if D > self.size:
-            for p, point in enumerate(self.points):
-                yield p, point
+            for p in range(len(self.points)):
+                yield p
             return
         for d in range(0, D):
             for i in range(0, d + 1):
@@ -360,11 +366,11 @@ class Grid:
                 for key in keys:
                     if key not in self.data.keys():
                         continue
-                    for p, point in self.data[key]:
-                        yield p, point
+                    for p in self.data[key]:
+                        yield p
 
-def get_voronoi_lines(points, grid_granularity):
-    grid = Grid(points, 3)
+def get_voronoi_lines(grid):
+    points = grid.points
     triples = [
         (p0, p1, p2)
         for p2 in range(len(points))
@@ -383,9 +389,9 @@ def get_voronoi_lines(points, grid_granularity):
     relevants = [
         π for π in centers.keys()
         if all(
-            distances[π] <= dist(point, centers[π])
+            distances[π] <= dist(points[p], centers[π])
             or p in π
-            for p, point in grid.around(centers[π], distances[π])
+            for p in grid.around(centers[π], distances[π])
         )
     ]
     edges = [
