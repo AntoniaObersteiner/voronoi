@@ -222,7 +222,7 @@ def main(number_of_points, grid_granularity):
     )
     stamp = time()
     grid = Grid(points + circles, grid_granularity)
-    while True:
+    for i in range(3):
         for p, point in enumerate(points):
             grid.points[p] = (
                 point[0] + speed*(random()-.5),

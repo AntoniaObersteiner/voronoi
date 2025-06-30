@@ -9,3 +9,5 @@
 # tex results
 *.pdf
 
+# performance files
+perf_*
