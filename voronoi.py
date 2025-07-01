@@ -167,11 +167,22 @@ argparser.add_argument(
 if __name__ == "__main__":
     args = argparser.parse_args()
 
+def in_box(P):
+    return -args.box <= P[0] <= args.box and -args.box <= P[1] <= args.box
+
 def goto(P):
-    if -args.box <= P[0] <= args.box and -args.box <= P[1] <= args.box:
+    if in_box(P):
         x = P[0] * args.scale
         y = P[1] * args.scale
         turtle.goto(x, y)
+
+def line(P, Q):
+    if in_box(P) and in_box(Q):
+        turtle.up()
+        goto(P)
+        turtle.down()
+        goto(Q)
+
 
 def dist(P, Q = (0, 0)):
     return (
@@ -245,10 +256,7 @@ class Line:
         return self.a * x + self.b * y - self.d
 
     def draw(self):
-        turtle.up()
-        goto(self.T)
-        turtle.down()
-        goto(self.U)
+        line(self.T, self.U)
 
     def intersect(self, other):
         a1 =  self.a
