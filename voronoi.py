@@ -5,12 +5,145 @@ from time import sleep, time
 from random import random
 from math import sin, cos, pi, ceil, floor
 from collections import defaultdict
+import argparse
 
-scale = (10, 10)
+argparser = argparse.ArgumentParser()
+argparser.add_argument(
+    "--number-of-points", "-p",
+    default = 20,
+    type = int,
+    help = "how many points to add in the center",
+)
+argparser.add_argument(
+    "--speed", "-s",
+    default = 1.0,
+    type = float,
+    help = "how fast the points move",
+)
+argparser.add_argument(
+    "--granularity", "-g",
+    default = 5,
+    type = int,
+    help = "size of the grid cells that are used for optimization",
+)
+argparser.add_argument(
+    "--rounds", "-r",
+    default = 0,
+    type = int,
+    help = "how many steps to run before resetting, 0 is inifinity",
+)
+argparser.add_argument(
+    "--scale", "-S",
+    default = 10,
+    type = int,
+    help = "how to scale the drawing",
+)
+argparser.add_argument(
+    "--border", "-B",
+    default = 40,
+    type = int,
+    help = "only draw what is inside this in x and y: [-B, B]",
+)
+argparser.add_argument(
+    "--inner-radius", "-I",
+    default = 20,
+    type = int,
+    help = "the inner circle of dots created to have a nice border",
+)
+argparser.add_argument(
+    "--outer-radius", "-O",
+    default = 30,
+    type = int,
+    help = "the outer circle of dots created to have a nice border",
+)
+argparser.add_argument(
+    "--inner-phase",
+    default = 4,
+    type = int,
+    help = "the angle of the inner circle of dots created to have a nice border",
+)
+argparser.add_argument(
+    "--outer-phase",
+    default = 8,
+    type = int,
+    help = "the angle of the outer circle of dots created to have a nice border",
+)
+argparser.add_argument(
+    "--inner-step",
+    default = 19,
+    type = int,
+    help = "the angle step of the inner circle of dots created to have a nice border",
+)
+argparser.add_argument(
+    "--outer-step",
+    default = 19,
+    type = int,
+    help = "the angle step of the outer circle of dots created to have a nice border",
+)
+argparser.add_argument(
+    "--numbers", "-n",
+    action = "store_const",
+    const = True,
+    default = True,
+    help = "draw numbers for the points",
+)
+argparser.add_argument(
+    "--no-numbers", "-N",
+    action = "store_const",
+    const = False,
+    dest = "numbers",
+    help = "don't draw numbers for the points",
+)
+argparser.add_argument(
+    "--points",
+    action = "store_const",
+    const = True,
+    default = True,
+    help = "draw points for the points",
+)
+argparser.add_argument(
+    "--no-points", "-P",
+    action = "store_const",
+    const = False,
+    dest = "points",
+    help = "don't draw points for the points",
+)
+argparser.add_argument(
+    "--ask-to-continue", "-C",
+    action = "store_const",
+    const = True,
+    default = False,
+    help = "ask for input in each round",
+)
+argparser.add_argument(
+    "--dont-ask-to-continue",
+    action = "store_const",
+    const = False,
+    dest = "ask_to_continue",
+    help = "don't ask to for input in each round",
+)
+argparser.add_argument(
+    "--ask-to-quit", "-Q",
+    action = "store_const",
+    const = True,
+    default = True,
+    help = "ask for input at the end",
+)
+argparser.add_argument(
+    "--dont-ask-to-quit", "-q",
+    action = "store_const",
+    const = False,
+    dest = "ask_to_quit",
+    help = "don't ask to for input at the end",
+)
+
+if __name__ == "__main__":
+    args = argparser.parse_args()
+
 def goto(P):
     if -40 <= P[0] <= 40 and -40 <= P[1] <= 40:
-        x = P[0] * scale[0]
-        y = P[1] * scale[1]
+        x = P[0] * args.scale
+        y = P[1] * args.scale
         turtle.goto(x, y)
 
 def dist(P, Q = (0, 0)):
@@ -197,7 +330,8 @@ def redraw(points, lines, touched = None):
 
     for p, point in enumerate(points):
         dot(point)
-        turtle.write(f"  {p}")
+        if args.numbers:
+            turtle.write(f"  {p}")
 
     if touched is None:
         for line in lines:
@@ -208,33 +342,49 @@ def redraw(points, lines, touched = None):
 
     turtle.update()
 
-def main(number_of_points, grid_granularity):
-    r1 = 20
-    r2 = 30
-    speed = 1
+def infinite_loop():
+    i = 0
+    while True:
+        yield i
+        i += 1
+
+def main():
     points = [
         ((random()-.5)*20, (random() - .5)*20)
-        for _ in range(number_of_points)
+        for _ in range(args.number_of_points)
     ]
+    def cis(radius, degree):
+        radians = pi * degree / 180
+        return (radius * cos(radians), radius * sin(radians))
+
+    # args.inner_phase values that don't produce artefacts: 4, 14, 23, 31, 33
     circles = (
-        [(r1*cos(pi*i/180), r1*sin(pi*i/180)) for i in range(2, 360, 19)] +
-        [(r2*cos(pi*i/180), r2*sin(pi*i/180)) for i in range(5, 360, 19)]
+        [cis(args.inner_radius, i) for i in range(args.inner_phase, 360, args.inner_step)] +
+        [cis(args.outer_radius, i) for i in range(args.outer_phase, 360, args.outer_step)]
     )
     stamp = time()
-    grid = Grid(points + circles, grid_granularity)
-    for i in range(3):
+    grid = Grid(points + circles, args.granularity)
+
+    loop = range(args.rounds) if args.rounds else infinite_loop()
+    for i in loop:
         for p, point in enumerate(points):
             grid.points[p] = (
-                point[0] + speed*(random()-.5),
-                point[1] + speed*(random()-.5)
+                point[0] + args.speed*(random()-.5),
+                point[1] + args.speed*(random()-.5)
             )
             grid.update(p, point, points[p])
         lines = get_voronoi_lines(grid)
 
         if use_turtle:
-            redraw(grid.points[:len(points)], lines)
+            points_to_draw = grid.points[:len(points)] if args.points else []
+            redraw(points_to_draw, lines)
         print(f"{time() - stamp = }")
         stamp = time()
+        if args.ask_to_continue:
+            input("[ENTER] to continue")
+
+    if args.ask_to_quit:
+        input("[ENTER] to quit")
 
 class Grid:
     def round(self, point):
@@ -354,10 +504,7 @@ if __name__ == "__main__":
 
     from sys import argv
 
-    number_of_points = int(argv[1]) if len(argv) > 1 else 10
-    grid_granularity = int(argv[2]) if len(argv) > 2 else 3
-
     for _ in range(10):
         print("=================")
-        main(number_of_points, grid_granularity)
+        main()
 
