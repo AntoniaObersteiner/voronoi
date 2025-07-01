@@ -388,6 +388,17 @@ def infinite_loop():
         i += 1
 
 def pattern():
+    def scale(pattern, i, j = None):
+        if j is None:
+            j = i
+        return [
+            (
+                p[0] * i,
+                p[1] * j,
+            )
+            for p in pattern
+        ]
+
     def shift(pattern, i, j):
         return [
             (
@@ -430,7 +441,7 @@ def pattern():
             [cis(args.inner_radius, i) for i in range(args.inner_phase, 360, args.inner_step)] +
             [cis(args.outer_radius, i) for i in range(args.outer_phase, 360, args.outer_step)]
         )
-    if args.pattern == "walk":
+    elif args.pattern == "walk":
         stencil = [
             (0, 0),
             (2, 1),
@@ -443,15 +454,15 @@ def pattern():
             (8, 4),
             (8, 0),
         ]
-        points = randomize(list(set(
-            shift(stencil, 0,  0) +
-            shift(stencil, 8,  0) +
-            shift(stencil, 16, 0) +
-            shift(stencil, 0,  4) +
-            shift(stencil, 8,  4) +
-            shift(stencil, 16, 4)
-        )))
-        border = randomize(make_rectangle(-3, -3, 27, 11, 4.25, 4.25), .5)
+        points = scale(randomize(list(set(
+            shift(stencil, -12, -4) +
+            shift(stencil, - 4, -4) +
+            shift(stencil,   4, -4) +
+            shift(stencil, -12,  0) +
+            shift(stencil, - 4,  0) +
+            shift(stencil,   4,  0)
+        ))), 2)
+        border = scale(randomize(make_rectangle(-15, -7, 15, 7, 30/7, 30/7), .2), 2)
 
     run(points, border)
 
