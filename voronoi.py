@@ -9,6 +9,13 @@ import argparse
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
+    "--pattern", "-P",
+    default = "cell",
+    choices = ["cell", "walk"],
+    type = str,
+    help = "which pattern to draw",
+)
+argparser.add_argument(
     "--number-of-points", "-p",
     default = 20,
     type = int,
@@ -27,31 +34,37 @@ argparser.add_argument(
     help = "size of the grid cells that are used for optimization",
 )
 argparser.add_argument(
-    "--rounds", "-r",
+    "--steps", "-S",
     default = 0,
     type = int,
     help = "how many steps to run before resetting, 0 is inifinity",
 )
 argparser.add_argument(
-    "--scale", "-S",
+    "--rounds", "-r",
+    default = 1,
+    type = int,
+    help = "how many rounds of the program to run, 0 is inifinity",
+)
+argparser.add_argument(
+    "--scale", "-z",
     default = 10,
     type = int,
-    help = "how to scale the drawing",
+    help = "how to scale/zoom the drawing",
 )
 argparser.add_argument(
-    "--border", "-B",
+    "--box", "-b",
     default = 40,
     type = int,
-    help = "only draw what is inside this in x and y: [-B, B]",
+    help = "only draw what is inside this in x and y: [-box, box]",
 )
 argparser.add_argument(
-    "--inner-radius", "-I",
+    "--inner-radius",
     default = 20,
     type = int,
     help = "the inner circle of dots created to have a nice border",
 )
 argparser.add_argument(
-    "--outer-radius", "-O",
+    "--outer-radius",
     default = 30,
     type = int,
     help = "the outer circle of dots created to have a nice border",
@@ -102,11 +115,25 @@ argparser.add_argument(
     help = "draw points for the points",
 )
 argparser.add_argument(
-    "--no-points", "-P",
+    "--no-points", "-O",
     action = "store_const",
     const = False,
     dest = "points",
     help = "don't draw points for the points",
+)
+argparser.add_argument(
+    "--border-is-points", "-B",
+    action = "store_const",
+    const = True,
+    default = False,
+    help = "draw border like inner points",
+)
+argparser.add_argument(
+    "--border-is-not-points",
+    action = "store_const",
+    const = False,
+    dest = "border_is_points",
+    help = "don't draw border like inner points",
 )
 argparser.add_argument(
     "--ask-to-continue", "-C",
@@ -141,7 +168,7 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
 def goto(P):
-    if -40 <= P[0] <= 40 and -40 <= P[1] <= 40:
+    if -args.box <= P[0] <= args.box and -args.box <= P[1] <= args.box:
         x = P[0] * args.scale
         y = P[1] * args.scale
         turtle.goto(x, y)
@@ -348,24 +375,79 @@ def infinite_loop():
         yield i
         i += 1
 
-def main():
-    points = [
-        ((random()-.5)*20, (random() - .5)*20)
-        for _ in range(args.number_of_points)
-    ]
-    def cis(radius, degree):
-        radians = pi * degree / 180
-        return (radius * cos(radians), radius * sin(radians))
+def pattern():
+    def shift(pattern, i, j):
+        return [
+            (
+                p[0] + i,
+                p[1] + j,
+            )
+            for p in pattern
+        ]
 
-    # args.inner_phase values that don't produce artefacts: 4, 14, 23, 31, 33
-    circles = (
-        [cis(args.inner_radius, i) for i in range(args.inner_phase, 360, args.inner_step)] +
-        [cis(args.outer_radius, i) for i in range(args.outer_phase, 360, args.outer_step)]
-    )
+    def randomize(pattern, randomness = .1):
+        return [
+            (
+                p[0] + (random()-.5)*randomness,
+                p[1] + (random()-.5)*randomness,
+            )
+            for p in pattern
+        ]
+
+    def make_rectangle(x0, y0, x1, y1, xs, ys):
+        points = []
+        for i in range(0, int((x1 - x0) // xs) + 1):
+            points.append((x0 + i*xs, y0))
+            points.append((x0 + i*xs, y1))
+        for j in range(1, int((y1 - y0) // ys)):
+            points.append((x0, y0 + j*ys))
+            points.append((x1, y0 + j*ys))
+        return points
+
+    if args.pattern == "cell":
+        points = [
+            ((random()-.5)*20, (random() - .5)*20)
+            for _ in range(args.number_of_points)
+        ]
+        def cis(radius, degree):
+            radians = pi * degree / 180
+            return (radius * cos(radians), radius * sin(radians))
+
+        # args.inner_phase values that don't produce artefacts: 4, 14, 23, 31, 33
+        border = (
+            [cis(args.inner_radius, i) for i in range(args.inner_phase, 360, args.inner_step)] +
+            [cis(args.outer_radius, i) for i in range(args.outer_phase, 360, args.outer_step)]
+        )
+    if args.pattern == "walk":
+        stencil = [
+            (0, 0),
+            (2, 1),
+            (1, 2),
+            (4, 0),
+            (5, 2),
+            (6, 3),
+            (0, 4),
+            (4, 4),
+            (8, 4),
+            (8, 0),
+        ]
+        points = randomize(list(set(
+            shift(stencil, 0,  0) +
+            shift(stencil, 8,  0) +
+            shift(stencil, 16, 0) +
+            shift(stencil, 0,  4) +
+            shift(stencil, 8,  4) +
+            shift(stencil, 16, 4)
+        )))
+        border = randomize(make_rectangle(-3, -3, 27, 11, 4.25, 4.25), .5)
+
+    run(points, border)
+
+def run(points, border):
     stamp = time()
-    grid = Grid(points + circles, args.granularity)
+    grid = Grid(points + border, args.granularity)
 
-    loop = range(args.rounds) if args.rounds else infinite_loop()
+    loop = range(args.steps) if args.steps else infinite_loop()
     for i in loop:
         for p, point in enumerate(points):
             grid.points[p] = (
@@ -376,7 +458,8 @@ def main():
         lines = get_voronoi_lines(grid)
 
         if use_turtle:
-            points_to_draw = grid.points[:len(points)] if args.points else []
+            end_index = len(grid.points) if args.border_is_points else len(points)
+            points_to_draw = grid.points[ : end_index] if args.points else []
             redraw(points_to_draw, lines)
         print(f"{time() - stamp = }")
         stamp = time()
@@ -504,7 +587,8 @@ if __name__ == "__main__":
 
     from sys import argv
 
-    for _ in range(10):
+    loop = range(args.rounds) if args.rounds else infinite_loop()
+    for _ in loop:
         print("=================")
-        main()
+        pattern()
 
