@@ -175,6 +175,8 @@ def goto(P):
         x = P[0] * args.scale
         y = P[1] * args.scale
         turtle.goto(x, y)
+        return True
+    return False
 
 def line(P, Q):
     if in_box(P) and in_box(Q):
@@ -182,7 +184,8 @@ def line(P, Q):
         goto(P)
         turtle.down()
         goto(Q)
-
+        return True
+    return False
 
 def dist(P, Q = (0, 0)):
     return (
@@ -354,8 +357,10 @@ def get_triple_point(P, Q, R):
 
 def dot(P):
     turtle.up()
-    goto(P)
-    turtle.dot()
+    if goto(P):
+        turtle.dot()
+        return True
+    return False
 
 def turtle_init():
     turtle.tracer(0, 0)
@@ -364,8 +369,7 @@ def redraw(points, lines, touched = None):
     turtle.clear()
 
     for p, point in enumerate(points):
-        dot(point)
-        if args.numbers:
+        if dot(point) and args.numbers:
             turtle.write(f"  {p}")
 
     if touched is None:
